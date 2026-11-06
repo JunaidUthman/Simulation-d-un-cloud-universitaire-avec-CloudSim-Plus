@@ -1,0 +1,114 @@
+# ==============================================================================
+# Git Ignore - Projet CloudSim Plus (Université Abdelmalek Essaâdi)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Maven & Java Build Output
+# ------------------------------------------------------------------------------
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Fichiers compilés Java
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# ------------------------------------------------------------------------------
+# 2. Environnements de développement (IDEs) & Éditeurs
+# ------------------------------------------------------------------------------
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.recommenders
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# ------------------------------------------------------------------------------
+# 3. Python (Scripts de génération de diagrammes)
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ------------------------------------------------------------------------------
+# 4. Fichiers système & temporaires
+# ------------------------------------------------------------------------------
+# Linux / Unix
+*~
+.directory
+.Trash-*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+
+# ------------------------------------------------------------------------------
+# 5. Logs & Fichiers de crash JVM
+# ------------------------------------------------------------------------------
+*.log
+hs_err_pid*
+replay_pid*
+
