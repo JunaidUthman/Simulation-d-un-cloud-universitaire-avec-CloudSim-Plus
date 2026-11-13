@@ -13,12 +13,12 @@ L'UAE est l'une des plus grandes universités du Maroc. Pour dimensionner correc
 
 
 ### B. Répartition géographique et Établissements
-Le cloud de l'université doit être capable de desservir de multiples sites répartis sur une vaste zone géographique (la région Tanger-Tétouan-Al Hoceïma). L'université regroupe environ 18 établissements universitaires répartis dans 5 villes principales :
-1.  **Tanger :** FST (Faculté des Sciences et Techniques), ENCG, ENSA, FSJES, FMP (Médecine), FMD (Dentaire).
-2.  **Tétouan / Martil :** Faculté des Sciences, FLSH (Lettres), ENS, ENSA Tétouan.
-3.  **Larache :** Faculté Polydisciplinaire (FPL).
-4.  **Al Hoceïma :** ENSA, FST, FSJES.
-5.  **Ksar El-Kébir :** Faculté Polydisciplinaire.
+Le cloud de l'université doit être capable de desservir de multiples sites répartis sur une vaste zone géographique (la région Tanger-Tétouan-Al Hoceïma). L'université regroupe **21 établissements universitaires** répartis dans **5 villes** principales :
+1.  **Tanger (7 établissements) :** FST (Faculté des Sciences et Techniques), ENCG (École Nationale de Commerce et de Gestion), ENSA (École Nationale des Sciences Appliquées), FMPT (Faculté de Médecine et de Pharmacie), FSJP (Faculté des Sciences Juridiques et Politiques), FEG (Faculté d'Économie et de Gestion), ESRFT (École Supérieure Roi Fahd de Traduction).
+2.  **Tétouan / Martil (7 établissements) :** Faculté des Sciences, FLSH (Faculté des Lettres et des Sciences Humaines), FSJES (Faculté des Sciences Juridiques, Économiques et Sociales), ENS (École Normale Supérieure), ENSA Tétouan, EST (École Supérieure de Technologie), FOD (Formation Ouverte et à Distance).
+3.  **Al Hoceïma (5 établissements) :** ENSA, FST, FSJES, EST, ENCG.
+4.  **Larache (1 établissement) :** FPL (Faculté Polydisciplinaire de Larache).
+5.  **Ksar El-Kébir (1 établissement) :** FPK (Faculté Polydisciplinaire de Ksar El-Kébir).
 > **Source :** Portail officiel de l'Université Abdelmalek Essaâdi - Rubrique "Établissements" (www.uae.ac.ma).
 
 ### C. Services Numériques (Utilisés et Potentiels)

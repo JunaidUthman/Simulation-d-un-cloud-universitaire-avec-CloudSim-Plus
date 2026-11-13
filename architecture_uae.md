@@ -13,8 +13,8 @@
 ### B. Nombre et Emplacement des Datacenters
 
 * **Proposition :** 2 Datacenters physiques.
-  * **Datacenter 1 (Tanger) :** Héberge et dessert les requêtes de la zone Tanger (FST, ENSA, ENCG, Faculté de Médecine).
-  * **Datacenter 2 (Tétouan/Martil) :** Héberge et dessert la zone Tétouan (Faculté des Sciences, ENS, FLSH).
+  * **Datacenter 1 (Tanger) :** Héberge et dessert les requêtes de la zone Tanger (FST, ENCG, ENSA, FMPT, FSJP, FEG, ESRFT) ainsi que les zones rattachées (Larache — FPL, Ksar El-Kébir — FPK).
+  * **Datacenter 2 (Tétouan/Martil) :** Héberge et dessert la zone Tétouan (Faculté des Sciences, FLSH, FSJES, ENS, ENSA, EST, FOD) ainsi que la zone rattachée (Al Hoceïma — ENSA, FST, FSJES, EST, ENCG).
 * **Justification :** Cette répartition géographique minimise la latence réseau pour les étudiants locaux. Elle assure également une haute disponibilité (*Disaster Recovery*) : si le Datacenter de Tanger tombe en panne, le trafic bascule automatiquement sur celui de Tétouan.
 
 ### C. Nombre et Capacité des Serveurs (Hôtes)
@@ -32,24 +32,24 @@
   * *Justification :* Le streaming vidéo, le téléchargement de PDF et les requêtes de milliers d'étudiants exigent beaucoup de calcul et de mémoire.
 
 
-- **Inscriptions & ENT (SaaS) :** 5 VMs de taille moyenne (4 cœurs, 8 Go RAM) en période normale, avec une règle de mise à l'échelle automatique (`HorizontalVmScaling`) pouvant monter à 25 VMs en période de pointe.
+- **Inscriptions & ENT (SaaS) :** 5 VMs de taille moyenne (4 cœurs, 8 Go RAM) en période normale, avec une règle de mise à l'échelle automatique (`HorizontalVmScaling`) pouvant monter jusqu'à 53 VMs (+48 VMs) lors du grand pic des inscriptions de rentrée.
 
-  * *Justification :* Absorber les goulots d'étranglement lors de l'ouverture des inscriptions.
+  * *Justification :* Absorber les goulots d'étranglement massifs lors de l'ouverture des inscriptions universitaires sur Apogée.
 
 - **Serveurs de Recherche et DSI (IaaS) :** 10 VMs de taille moyenne (4 cœurs, 8 Go RAM) allouées dynamiquement. Justification : Les chercheurs et administrateurs systèmes ont besoin d'un contrôle total sur le système d'exploitation pour configurer leurs environnements sur mesure.
 
 * **Messagerie et Bibliothèque (SaaS) :** 4 VMs de petite taille (2 cœurs, 4 Go RAM).
   * *Justification :* Services à trafic régulier et prévisible, nécessitant moins de ressources brutes.
 
-- **Examens en ligne (SaaS) :** 2 VMs de taille moyenne (4 cœurs, 8 Go RAM) en période normale, avec mise à l'échelle automatique (`HorizontalVmScaling`) pouvant monter à 30 VMs lors des sessions d'examens. Justification : Les évaluations en ligne génèrent des pics de charge très courts mais intenses.
+- **Examens en ligne (SaaS) :** 2 VMs de taille moyenne (4 cœurs, 8 Go RAM) en période de routine (les sessions d'examens et les inscriptions ne se chevauchant jamais dans le calendrier universitaire).
 
 ### E. Bilan et Répartition des Ressources (Capacity Planning & Seuil de Bursting)
 
 L'architecture hybride adoptée repose sur une gestion stricte des ressources physiques et un mécanisme de débordement basé sur un seuil de sécurité critique.
 
 * **Capacité du Cloud Privé :** L'infrastructure physique locale dispose d'un maximum de 320 cœurs et 1280 Go de RAM (10 hôtes de 32 cœurs/128 Go).
-* **Période Normale :** En dehors des pics, les services de base consomment 184 cœurs et 584 Go de RAM.
+* **Période Normale :** En dehors des pics, les services de base consomment 184 cœurs et 584 Go de RAM (42 VMs).
 * **Règle de Débordement (Seuil à 85 %) :** Pour éviter les crashs de l'hyperviseur et garantir la tolérance aux pannes (Disaster Recovery), le Cloud Privé ne doit jamais être saturé à 100 %. L'orchestrateur est configuré avec un seuil de débordement fixé à 85 % d'utilisation CPU (soit 272 cœurs maximum autorisés). Les 48 cœurs restants (15 %) constituent une marge intouchable de sécurité. L'espace disponible pour l'auto-scaling local est donc de 88 cœurs (272 - 184).
-* **Période de Pointe et Cloud Bursting :** Lors des inscriptions de septembre et des sessions d'examens, le système d'auto-scaling (`HorizontalVmScaling`) requiert la création de 48 nouvelles VMs (20 pour les inscriptions, 28 pour les examens), représentant une demande additionnelle de 192 cœurs. 
-* **Répartition finale :** L'orchestrateur sature d'abord le Cloud Privé jusqu'à son seuil de sécurité de 85 %, absorbant ainsi 88 cœurs (22 VMs). Le reliquat de la demande, soit 104 cœurs (représentant 26 VMs de 4 cœurs), est automatiquement déployé sur le Cloud Public. Ce mécanisme protège l'infrastructure locale de la surcharge tout en garantissant la fluidité du service pour les étudiants.
+* **Période de Pointe et Cloud Bursting (Inscriptions de Septembre) :** Les inscriptions de rentrée et les examens semestriels ne pouvant jamais se chevaucher dans la réalité, la période de pointe modélisée simule l'afflux massif de la rentrée universitaire (Inscriptions & ENT). Le système d'auto-scaling (`HorizontalVmScaling`) requiert la création de 48 nouvelles VMs ENT (demande additionnelle de 192 cœurs).
+* **Répartition finale :** L'orchestrateur sature d'abord le Cloud Privé jusqu'à son seuil de sécurité de 85 %, absorbant ainsi 88 cœurs (22 VMs ENT privées). Le reliquat de la demande, soit 104 cœurs (représentant 26 VMs ENT), est automatiquement déployé sur le Cloud Public. Ce mécanisme protège l'infrastructure locale de la surcharge tout en garantissant la fluidité d'inscription pour les étudiants.
 

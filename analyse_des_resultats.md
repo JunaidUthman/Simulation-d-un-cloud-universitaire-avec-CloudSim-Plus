@@ -11,16 +11,17 @@ Les simulations ont été exécutées sur le moteur **CloudSim Plus (v8.0.0)** e
 
 | Scénario / Configuration | Ordonnanceur Tâches | Politique Alloc. VM | Makespan (s) | Temps Rép. Moy. (s) | Temps Attente (s) | CPU Hôtes (%) | VMs Créées (Privé / Public) | Tâches Réussies | Coût Total ($) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1. Période Normale (Référence)** | `TimeShared` | `Simple` (First-Fit) | 248.95 s | 76.50 s | 0.00 s | 5.3 % | 42 (42 / 0) | 83 / 83 | $845.28 |
-| **2. Période de Pointe (Statique)** | `TimeShared` | `Simple` (First-Fit) | 133.68 s | 97.63 s | 0.00 s | 5.7 % | 42 (42 / 0) | 700 / 700 | $633.19 |
-| **3. Période de Pointe (Statique)** | `SpaceShared` | `Simple` (First-Fit) | 130.87 s | 54.30 s | 45.77 s | 7.1 % | 42 (42 / 0) | 700 / 700 | $628.01 |
-| **4. Période Normale (BestFit)** | `TimeShared` | `BestFit` | 248.25 s | 77.04 s | 0.00 s | 5.0 % | 42 (42 / 0) | 83 / 83 | $844.00 |
-| **5. Période de Pointe (Élastique)** | `TimeShared` | `BestFit` | **120.43 s** | **15.24 s** | **0.00 s** | **11.1 %** | **90 (64 / 26)** | 700 / 700 | $2 962.46 |
+| **1. Période Normale (Référence)** | `TimeShared` | `Simple` (First-Fit) | 32.45 s | 7.36 s | 0.00 s | 2.6 % | 42 (42 / 0) | 90 / 90 | $446.91 |
+| **2. Période de Pointe (Statique)** | `TimeShared` | `Simple` (First-Fit) | 120.43 s | 30.83 s | 0.00 s | 12.0 % | 42 (42 / 0) | 700 / 700 | $608.80 |
+| **3. Période de Pointe (Statique)** | `SpaceShared` | `Simple` (First-Fit) | 120.43 s | 22.02 s | 12.87 s | 12.0 % | 42 (42 / 0) | 700 / 700 | $608.80 |
+| **4. Période Normale (BestFit)** | `TimeShared` | `BestFit` | 34.43 s | 7.45 s | 0.00 s | 4.9 % | 42 (42 / 0) | 90 / 90 | $450.56 |
+| **5. Période de Pointe (Élastique)** | `TimeShared` | `BestFit` | **120.38 s** | **10.83 s** | **0.00 s** | **9.3 %** | **90 (64 / 26)** | 700 / 700 | $2 951.81 |
 
 > [!NOTE]
-> **Détail sur les services critiques à forte élasticité (ENT Apogée & Examens QCM) :**
-> * En **Pointe Statique (42 VMs)** : Temps de réponse moyen = **102.36 s**.
-> * En **Pointe Élastique (90 VMs)** : Temps de réponse moyen = **13.63 s** (divisé par **7.5×**).
+> **Détail sur le service en pointe (Inscriptions & ENT Apogée - 605 Cloudlets) :**
+> * En **Période Normale** : Temps de réponse moyen = **2.70 s** (délai web parfaitement fluide et réactif).
+> * En **Pointe Statique (42 VMs - 5 VMs ENT)** : Temps de réponse moyen = **32.34 s** (engorgement sévère des 605 étudiants sur seulement 5 serveurs d'inscription, latence multipliée par **12×**).
+> * En **Pointe Élastique (90 VMs - 53 VMs ENT)** : Temps de réponse moyen = **9.20 s** (chute spectaculaire de la latence grâce aux 48 VMs additionnelles et au Cloud Bursting).
 
 ---
 
@@ -30,13 +31,14 @@ Les simulations ont été exécutées sur le moteur **CloudSim Plus (v8.0.0)** e
 
 Le temps de réponse représente le délai perçu par l'usager (étudiant ou enseignant) entre la soumission de sa requête et la réception du résultat complet.
 
-1. **Comparaison `TimeShared` vs `SpaceShared` :**
-   * En `CloudletSchedulerSpaceShared`, les cœurs de processeur sont alloués de façon exclusive selon le principe FIFO (*First In, First Out*). Dès qu'un afflux massif de clics QCM ou de soumissions Apogée arrive, les cœurs sont saturés et le temps d'attente explose à **45.77 s**. Les étudiants subissent un blocage total en file d'attente.
-   * En `CloudletSchedulerTimeShared`, le processeur partage ses cycles d'horloge entre toutes les requêtes actives. Le temps d'attente en file est de **0.00 s**, garantissant qu'aucun étudiant n'est mis en attente indéfinie.
+1. **Hiérarchie naturelle des performances :**
+   * **Période Normale (7.36 s au global / 2.70 s sur l'ENT) :** L'infrastructure locale de base (42 VMs) absorbe sans aucune difficulté la charge de routine. Les requêtes interactives se traitent en moins de 3 secondes.
+   * **Période de Pointe Statique (30.83 s au global / 32.34 s sur l'ENT) :** Sous l'afflux massif de 700 requêtes d'étudiants, la latence est multipliée par plus de 4 au global et par **12× sur l'ENT**. L'infrastructure statique est totalement engorgée.
+   * **Période de Pointe Élastique (10.83 s au global / 9.20 s sur l'ENT) :** L'auto-scaling horizontal instancie dynamiquement 48 nouvelles VMs (dont 26 sur le Cloud Public), ramenant le délai à un niveau acceptable sous forte charge.
 
-2. **Impact de l'Auto-scaling horizontal (`HorizontalVmScaling`) :**
-   * Sous une charge de pointe sans élasticité (configuration statique à 42 VMs), le temps de réponse moyen grimpe à **97.63 s** au niveau global, et dépasse **102 s** sur l'ENT et les examens. Ce délai est critique et inacceptable pour un examen en ligne minuté.
-   * Avec l'activation de `HorizontalVmScaling` et le déploiement dynamique de 48 VMs supplémentaires, le temps de réponse global s'effondre à **15.24 s**, et tombe à **13.63 s** sur les examens et inscriptions. La charge est immédiatement ventilée sur les nouveaux nœuds de calcul.
+2. **Comparaison `TimeShared` vs `SpaceShared` :**
+   * En `CloudletSchedulerSpaceShared`, les cœurs de processeur sont alloués de façon exclusive selon le principe FIFO (*First In, First Out*). Dès que l'afflux massif de 605 soumissions d'inscription et de transactions DB arrive sur les 5 VMs ENT de base, les cœurs sont saturés et un temps d'attente bloquant explose à **12.87 s en moyenne** (et **14.82 s** sur l'ENT). Les étudiants subissent un blocage total devant une page blanche.
+   * En `CloudletSchedulerTimeShared`, le processeur partage ses cycles d'horloge entre toutes les requêtes actives. Le temps d'attente en file est de **0.00 s**, garantissant un démarrage immédiat du traitement pour chaque étudiant.
 
 ---
 
@@ -44,10 +46,10 @@ Le temps de réponse représente le délai perçu par l'usager (étudiant ou ens
 
 Le Makespan désigne la durée totale nécessaire pour terminer l'ensemble des tâches soumises lors de la simulation.
 
-* **En Période Normale (Makespan $\approx$ 248 s) :** 
-  La durée globale est conditionnée par les simulations scientifiques lourdes de la recherche (DSI : 300 000 MI) et les sessions complètes d'e-learning (Moodle : 50 000 à 100 000 MI) modélisées avec `UtilizationModelStochastic`. Ces calculs de fond s'étalent sur la journée.
-* **En Période de Pointe (Makespan $\approx$ 120 s à 133 s) :**
-  L'utilisation de `UtilizationModelFull` mobilise 100 % des capacités CPU pour absorber le choc des requêtes simultanées. L'auto-scaling permet de réduire le Makespan de **133.68 s à 120.43 s**, prouvant une évacuation plus rapide de l'engorgement global.
+* **En Période Normale (Makespan $\approx$ 32 à 34 s) :** 
+  L'ensemble des 90 tâches de routine universitaires est évacué rapidement, démontrant une infrastructure saine en temps de fonctionnement standard.
+* **En Période de Pointe (Makespan $\approx$ 120 s) :**
+  Ce Makespan reflète la durée totale du pic de rentrée avec l'injection échelonnée de 6 vagues successives d'inscriptions et d'écritures SQL réparties sur l'horloge de simulation. L'auto-scaling absorbe l'intégralité du pic sans aucun ralentissement résiduel.
 
 ---
 
@@ -71,13 +73,13 @@ $$\text{Coût Total} = \text{Coût Cloud Privé} + \text{Coût Cloud Public (Bur
 
 | Scénario | Coût Cloud Privé | Coût Cloud Public | Coût Total | Remarque |
 | :--- | :---: | :---: | :---: | :--- |
-| **Période Normale (42 VMs)** | $844.00 | $0.00 | **$844.00** | 100 % des VMs hébergées en interne |
-| **Pointe Statique (42 VMs)** | $633.19 | $0.00 | **$633.19** | Saturation sévère, aucun coût externe |
-| **Pointe Élastique (90 VMs)** | $912.30 | $2 050.16 | **$2 962.46** | Débordement de 26 VMs sur le Cloud Public |
+| **Période Normale (42 VMs)** | $450.56 | $0.00 | **$450.56** | 100 % des VMs hébergées en interne |
+| **Pointe Statique (42 VMs)** | $608.80 | $0.00 | **$608.80** | Saturation sévère, aucun coût externe |
+| **Pointe Élastique (90 VMs)** | $901.65 | $2 050.16 | **$2 951.81** | Débordement de 26 VMs sur le Cloud Public |
 
 > [!TIP]
 > **Justification économique (Capex vs Opex) :**
-> Bien que la période de pointe élastique génère un coût supérieur ($2 962.46), il s'agit d'une **dépense opérationnelle temporaire (Opex)** facturée uniquement durant les quelques jours de pointe (inscriptions de septembre et examens de fin de semestre).
+> Bien que la période de pointe élastique génère un coût supérieur ($2 951.81), il s'agit d'une **dépense opérationnelle temporaire (Opex)** facturée uniquement durant les quelques jours du grand pic d'inscriptions de septembre.
 > Acheter 48 serveurs physiques supplémentaires pour absorber ce pic en interne coûterait plusieurs dizaines de milliers d'euros en investissement matériel (Capex), serveurs qui resteraient inutilisés 11 mois sur 12. Le recours au Cloud Bursting est donc la solution la plus rentable pour l'université.
 
 ---
@@ -99,14 +101,14 @@ Pour répondre formellement à la question posée dans l'énoncé du projet :
 * Pour garantir la tolérance aux pannes (*Disaster Recovery*) et la stabilité des hyperviseurs, un seuil de sécurité strict de **85 % (272 cœurs maximum)** a été fixé.
 * En dehors des pics, les services consomment déjà **184 cœurs** (42 VMs de base).
 * La capacité d'absorption locale restante avant d'atteindre le seuil critique n'est que de **88 cœurs** (soit **22 VMs** de 4 cœurs).
-* Or, le pic simultané des inscriptions et des examens exige **48 nouvelles VMs (192 cœurs additionnels)**. L'infrastructure locale seule est donc mathématiquement incapable d'encaisser la charge sans risquer l'effondrement ou des temps d'attente inacceptables (> 100 s).
+* Or, le pic massif des inscriptions de rentrée exige **48 nouvelles VMs ENT (192 cœurs additionnels)** pour traiter les 605 requêtes d'étudiants. L'infrastructure locale seule est donc mathématiquement incapable d'encaisser la charge sans risquer l'effondrement ou des temps d'attente inacceptables (> 30 s).
 
 ### 2. Avec l'architecture Cloud Hybride adoptée (Cloud Bursting) : **OUI, PARFAITEMENT.**
-* L'orchestrateur sature d'abord intelligemment les ressources locales jusqu'à concurrence du seuil de sécurité de 85 %, déployant **22 VMs dans le Cloud Privé** (pour atteindre 64 VMs locales).
+* L'orchestrateur sature d'abord intelligemment les ressources locales jusqu'à concurrence du seuil de sécurité de 85 %, déployant **22 VMs ENT dans le Cloud Privé** (pour atteindre 64 VMs locales).
 * Les **26 VMs excédentaires (104 cœurs)** sont automatiquement instanciées sur le **Cloud Public**.
 * **Bilan final :**
   1. **Disponibilité :** 100 % des requêtes sont traitées avec succès sans aucune perte.
-  2. **Performance :** Le temps de réponse moyen pour les étudiants passe de plus de 102 secondes à **moins de 14 secondes**.
+  2. **Performance :** Le temps de réponse moyen pour les étudiants sur le portail d'inscriptions (ENT) passe de plus de 32 secondes en statique à **9.20 secondes** (et **10.83 secondes** au niveau global).
   3. **Souveraineté :** Toutes les données sensibles restent hébergées sur le territoire universitaire.
   4. **Résilience :** La marge de réserve de 15 % (48 cœurs) reste intacte pour parer à une panne éventuelle d'un hôte physique ou du datacenter de Tanger.
 

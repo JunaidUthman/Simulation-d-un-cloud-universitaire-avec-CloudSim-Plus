@@ -80,19 +80,19 @@ public final class CloudArchitectureConfig {
     public static final long VM_MOODLE_RAM_MB = 16 * 1024L;
     public static final int VM_MOODLE_COUNT = 15; // 8 Tanger + 7 Tétouan
 
-    // C. Inscriptions & ENT Apogée (SaaS) - 5 de base, jusqu'à 25 en pointe (+20)
+    // C. Inscriptions & ENT Apogée (SaaS) - 5 de base, jusqu'à 53 en pointe (+48 VMs)
     public static final int VM_ENT_PES = 4;
     public static final long VM_ENT_RAM_MB = 8 * 1024L;
     public static final int VM_ENT_BASE_COUNT = 5;
-    public static final int VM_ENT_MAX_COUNT = 25;
-    public static final int VM_ENT_BURST_ADDITIONAL = VM_ENT_MAX_COUNT - VM_ENT_BASE_COUNT; // +20 VMs
+    public static final int VM_ENT_MAX_COUNT = 53; // 5 base + 48 élastiques en pointe de septembre
+    public static final int VM_ENT_BURST_ADDITIONAL = VM_ENT_MAX_COUNT - VM_ENT_BASE_COUNT; // +48 VMs
 
-    // D. Examens en ligne (SaaS) - 2 de base, jusqu'à 30 en session (+28)
+    // D. Examens en ligne (SaaS) - 2 VMs de base (hors session d'examens)
     public static final int VM_EXAMS_PES = 4;
     public static final long VM_EXAMS_RAM_MB = 8 * 1024L;
     public static final int VM_EXAMS_BASE_COUNT = 2;
-    public static final int VM_EXAMS_MAX_COUNT = 30;
-    public static final int VM_EXAMS_BURST_ADDITIONAL = VM_EXAMS_MAX_COUNT - VM_EXAMS_BASE_COUNT; // +28 VMs
+    public static final int VM_EXAMS_MAX_COUNT = 2; // Reste à 2 de base en septembre (pas d'examens pendant les inscriptions)
+    public static final int VM_EXAMS_BURST_ADDITIONAL = 0;
 
     // E. Serveurs DSI & Recherche (IaaS) - 10 VMs
     public static final int VM_DSI_PES = 4;

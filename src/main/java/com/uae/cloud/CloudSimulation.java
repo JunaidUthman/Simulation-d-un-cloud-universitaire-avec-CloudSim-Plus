@@ -313,24 +313,24 @@ public class CloudSimulation {
     // =========================================================================
     /**
      * Auto-scaling horizontal adapté aux besoins universitaires :
-     * Permet à chaque service critique (ENT, Examens) de provisionner des VMs
-     * supplémentaires tant que le processeur est surchargé (> 60%) ou que
-     * des requêtes attendent en file, jusqu'au dimensionnement plafond du cahier des charges.
+     * Permet au service en pointe (Inscriptions & ENT Apogée) de provisionner des VMs
+     * supplémentaires tant que le processeur est surchargé (> 50%) ou que
+     * des requêtes attendent en file, jusqu'au dimensionnement plafond du cahier des charges (+48 VMs).
      */
     private static class UaeHorizontalVmScaling extends HorizontalVmScalingSimple {
-        private final int maxScalePerVm;
-        private int scaledCount = 0;
+        private final AtomicInteger globalScaledCounter;
+        private final int maxGlobalScaled;
 
-        public UaeHorizontalVmScaling(int maxScalePerVm) {
-            this.maxScalePerVm = maxScalePerVm;
+        public UaeHorizontalVmScaling(AtomicInteger globalScaledCounter, int maxGlobalScaled) {
+            this.globalScaledCounter = globalScaledCounter;
+            this.maxGlobalScaled = maxGlobalScaled;
         }
 
         @Override
         protected boolean requestUpScaling(double time) {
-            if (scaledCount >= maxScalePerVm) {
+            if (globalScaledCounter.get() >= maxGlobalScaled) {
                 return false;
             }
-            scaledCount++;
             Vm newVm = getVmSupplier().get();
             if (newVm != null && newVm != Vm.NULL) {
                 getVm().getBroker().submitVm(newVm);
@@ -343,15 +343,17 @@ public class CloudSimulation {
     private void configureHorizontalAutoscaling() {
         // Capacité d'absorption locale : 22 VMs (88 cœurs) avant débordement
         // Reliquat vers le Cloud Public : jusqu'à 26 VMs (104 cœurs)
-        // Total additionnel possible : +48 VMs (20 ENT + 28 Examens)
+        // Total additionnel possible pour absorber les inscriptions : +48 VMs
         final int MAX_LOCAL_BURST_VMS = CloudArchitectureConfig.AVAILABLE_LOCAL_BURST_CORES / CloudArchitectureConfig.VM_ENT_PES; // 22
+        final int TOTAL_BURST_VMS = CloudArchitectureConfig.VM_ENT_BURST_ADDITIONAL; // 48
 
-        // Chaque VM ENT de base (5 VMs) peut provisionner jusqu'à 4 VMs supplémentaires (5 * 4 = +20 VMs)
-        int entScalePerVm = CloudArchitectureConfig.VM_ENT_BURST_ADDITIONAL / CloudArchitectureConfig.VM_ENT_BASE_COUNT; // 4
         for (Vm vm : entVms) {
-            UaeHorizontalVmScaling scaling = new UaeHorizontalVmScaling(entScalePerVm);
+            UaeHorizontalVmScaling scaling = new UaeHorizontalVmScaling(scaledVmsCount, TOTAL_BURST_VMS);
             scaling.setVmSupplier(() -> {
                 int currentScaled = scaledVmsCount.incrementAndGet();
+                if (currentScaled > TOTAL_BURST_VMS) {
+                    return null;
+                }
                 boolean routeToPublic = (currentScaled > MAX_LOCAL_BURST_VMS);
 
                 String tag;
@@ -370,31 +372,6 @@ public class CloudSimulation {
             scaling.setOverloadPredicate(v -> v.getCpuPercentUtilization() > 0.50);
             vm.setHorizontalScaling(scaling);
         }
-
-        // Chaque VM Examen de base (2 VMs) peut provisionner jusqu'à 14 VMs supplémentaires (2 * 14 = +28 VMs)
-        int examScalePerVm = CloudArchitectureConfig.VM_EXAMS_BURST_ADDITIONAL / CloudArchitectureConfig.VM_EXAMS_BASE_COUNT; // 14
-        for (Vm vm : examVms) {
-            UaeHorizontalVmScaling scaling = new UaeHorizontalVmScaling(examScalePerVm);
-            scaling.setVmSupplier(() -> {
-                int currentScaled = scaledVmsCount.incrementAndGet();
-                boolean routeToPublic = (currentScaled > MAX_LOCAL_BURST_VMS);
-
-                String tag;
-                if (routeToPublic) {
-                    publicBurstVmsCount.incrementAndGet();
-                    tag = "BURST_PUBLIC:EXAM";
-                } else {
-                    tag = (currentScaled % 2 == 0) ? "PRIV_TETOUAN:EXAM_SCALE" : "PRIV_TANGER:EXAM_SCALE";
-                }
-
-                Vm newVm = createVm(CloudArchitectureConfig.VM_EXAMS_PES, CloudArchitectureConfig.VM_EXAMS_RAM_MB, tag);
-                examVms.add(newVm);
-                vmList.add(newVm);
-                return newVm;
-            });
-            scaling.setOverloadPredicate(v -> v.getCpuPercentUtilization() > 0.50);
-            vm.setHorizontalScaling(scaling);
-        }
     }
 
     // =========================================================================
@@ -404,28 +381,32 @@ public class CloudSimulation {
         Random rand = new Random(42); // graine fixe pour reproductibilité
 
         if (scenario == SimulationScenario.NORMAL_PERIOD) {
-            // Période normale : charge modérée, utilisation stochastique (~80 requêtes réparties)
-            submitCloudletBatch(2, 25, 50000, 100000, 4, true, rand); // MOODLE
-            submitCloudletBatch(5, 10, 300000, 300000, 4, true, rand); // DSI
-            submitCloudletBatch(6, 20, 10000,  15000,  2, true, rand); // MAIL
-            submitCloudletBatch(3, 15, 2000,   4000,   4, true, rand); // ENT
-            submitCloudletBatch(4,  5, 1000,   2000,   4, true, rand); // EXAM
-            submitCloudletBatch(1,  8, 15000,  25000,  8, true, rand); // DB
+            // Période normale : charge modérée, utilisation stochastique (90 requêtes de routine réparties)
+            // Requêtes calibrées pour des opérations interactives fluides (1 à 4s de temps de réponse)
+            submitCloudletBatch(2, 25, 4000,   8000,   1, true, rand); // MOODLE (1 cœur - consultation cours/slides)
+            submitCloudletBatch(5, 10, 20000,  40000,  4, true, rand); // DSI (4 cœurs - scripts de recherche de routine)
+            submitCloudletBatch(6, 20, 2000,   5000,   1, true, rand); // MAIL (1 cœur - consultation messagerie)
+            submitCloudletBatch(3, 15, 2000,   4000,   1, true, rand); // ENT (1 cœur - consultation dossier/notes)
+            submitCloudletBatch(4,  5, 1000,   2000,   1, true, rand); // EXAM (1 cœur - quiz de contrôle continu)
+            submitCloudletBatch(1, 15, 5000,   10000,  2, true, rand); // DB (2 cœurs - requêtes SQL de routine)
         } else {
-            // Période de pointe (Statique ou Élastique) :
-            // Trafic de fond normal soumis au démarrage
-            submitCloudletBatch(2, 20, 50000, 80000, 4, false, rand); // MOODLE
-            submitCloudletBatch(5,  5, 300000, 300000, 4, false, rand); // DSI
-            submitCloudletBatch(6, 15, 10000, 12000, 2, false, rand); // MAIL
-            submitCloudletBatch(1, 10, 20000, 30000, 8, false, rand); // DB
+            // Période de pointe : Rentrée universitaire de Septembre (Inscriptions massives ENT & Apogée)
+            // Total : 700 Cloudlets (45 fond + 50 DB + 605 Inscriptions ENT)
+            // 1. Trafic de fond universitaire régulier (45 Cloudlets)
+            submitCloudletBatch(2, 20, 50000, 80000, 1, false, rand); // MOODLE (1 cœur)
+            submitCloudletBatch(5,  5, 300000, 300000, 4, false, rand); // DSI (4 cœurs)
+            submitCloudletBatch(6, 15, 10000, 12000, 1, false, rand); // MAIL (1 cœur)
+            submitCloudletBatch(4,  5, 1000,  2000,  1, false, rand); // EXAM (1 cœur - routine contrôle continu)
 
-            // Vagues massives et échelonnées d'inscriptions (ENT) et d'examens
-            // Vague 1 à t=0 pour déclencher la saturation immédiate
-            submitCloudletBatch(3, 60, 3000, 5000, 4, false, rand); // ENT
-            submitCloudletBatch(4, 50, 1000, 2000, 4, false, rand); // EXAM
+            // 2. Base de données Apogée : transactions SQL induites par les inscriptions (50 Cloudlets)
+            submitCloudletBatch(1, 20, 20000, 30000, 2, false, rand); // DB (2 cœurs - vague initiale de 20 requêtes)
+
+            // 3. Pic massif d'Inscriptions & ENT : 605 requêtes d'étudiants
+            // Vague 1 à t=0 pour déclencher la saturation immédiate (125 Cloudlets)
+            submitCloudletBatch(3, 125, 3000, 5000, 1, false, rand); // ENT (1 cœur)
 
             // Vagues successives injectées dynamiquement au fil de l'horloge
-            // Permet d'alimenter les nouvelles VMs dès qu'elles sont créées par l'auto-scaling
+            // 6 vagues de 80 ENT + 5 DB = 480 ENT + 30 DB = 510 Cloudlets au fil de l'eau
             final int[] wavesSent = {0};
             final int TOTAL_WAVES = 6;
             simulation.addOnClockTickListener(evt -> {
@@ -433,8 +414,8 @@ public class CloudSimulation {
                 // Injecter une nouvelle vague toutes les 2 secondes jusqu'à la fin du pic
                 if (wavesSent[0] < TOTAL_WAVES && time >= (wavesSent[0] + 1) * 2.0) {
                     wavesSent[0]++;
-                    submitCloudletBatch(3, 50, 3000, 5000, 4, false, rand); // ENT (+50 par vague)
-                    submitCloudletBatch(4, 40, 1000, 2000, 4, false, rand); // EXAM (+40 par vague)
+                    submitCloudletBatch(3, 80, 3000, 5000, 1, false, rand); // ENT (+80 par vague = 480)
+                    submitCloudletBatch(1,  5, 20000, 30000, 2, false, rand); // DB (+5 par vague = 30)
                 }
             });
         }
@@ -506,20 +487,20 @@ public class CloudSimulation {
         m.setAvgExecutionTimeSeconds(totalExecTime / count);
         m.setAvgResponseTimeSeconds(totalResponseTime / count);
 
-        // Analyse spécifique des services critiques à forte élasticité (ENT & Examens)
-        double entExamWait = 0.0;
-        double entExamResponse = 0.0;
-        int entExamCount = 0;
+        // Analyse spécifique du service critique en pointe (Inscriptions & ENT)
+        double entWait = 0.0;
+        double entResponse = 0.0;
+        int entCount = 0;
         for (Cloudlet c : finished) {
-            if (c.getPriority() == 3 || c.getPriority() == 4) { // ENT ou EXAM
-                entExamWait += c.getWaitingTime();
-                entExamResponse += (c.getFinishTime() - c.getSubmissionDelay());
-                entExamCount++;
+            if (c.getPriority() == 3) { // ENT / Inscriptions
+                entWait += c.getWaitingTime();
+                entResponse += (c.getFinishTime() - c.getSubmissionDelay());
+                entCount++;
             }
         }
-        if (entExamCount > 0) {
-            System.out.printf("      [Détail ENT/Examens] Rép. Moy: %.2fs | Attente Moy: %.2fs (%d tâches)%n",
-                entExamResponse / entExamCount, entExamWait / entExamCount, entExamCount);
+        if (entCount > 0) {
+            System.out.printf("      [Détail ENT/Inscriptions] Rép. Moy: %.2fs | Attente Moy: %.2fs (%d tâches)%n",
+                entResponse / entCount, entWait / entCount, entCount);
         }
 
         // Calcul de l'utilisation moyenne des hôtes

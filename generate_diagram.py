@@ -52,11 +52,11 @@ digraph UAE_Cloud {
         color      = "#1a252f"
         penwidth   = 2.5
 
-        TANGER  [label="Zone Tanger\nFST · ENSA · ENCG\nFSJES · FMP · FMD"
+        TANGER  [label="Zone Tanger\nFST · ENCG · ENSA · FMPT\nFSJP · FEG · ESRFT"
                  fillcolor="#3498db" fontcolor="#ffffff" shape=cylinder]
-        TETOUAN [label="Zone Tétouan / Martil\nFac. Sciences · FLSH\nENS · ENSA Tétouan"
+        TETOUAN [label="Zone Tétouan / Martil\nFac. Sciences · FLSH · FSJES\nENS · ENSA · EST · FOD"
                  fillcolor="#3498db" fontcolor="#ffffff" shape=cylinder]
-        AUTRES  [label="Autres zones\nLarache · Al Hoceïma\nKsar El-Kébir"
+        AUTRES  [label="Al Hoceïma (ENSA · FST · FSJES · EST · ENCG)\nLarache (FPL) · Ksar El-Kébir (FPK)"
                  fillcolor="#2980b9" fontcolor="#ffffff" shape=cylinder]
 
         TANGER -> TETOUAN -> AUTRES [style=invis]
@@ -135,7 +135,7 @@ digraph UAE_Cloud {
                             fillcolor="#34d399" color="#059669" penwidth=2 style="filled,rounded"]
                 VM1_ELEARN [label="E-learning (VM 4-11)\nSaaS · Moodle — 8 VMs\n4 cœurs / 16 GB RAM"
                             fillcolor="#93c6f0" style="filled,rounded"]
-                VM1_ENT    [label="ENT / Inscriptions Apogée\nSaaS · 5 → 25 VMs  AUTO-SCALE\n4 cœurs / 8 GB RAM"
+                VM1_ENT    [label="ENT / Inscriptions Apogée\nSaaS · 5 → 53 VMs  AUTO-SCALE\n4 cœurs / 8 GB RAM"
                             fillcolor="#fde68a" color="#d97706" penwidth=2 style="filled,rounded"]
                 VM1_EXAMS  [label="Examens en ligne\nSaaS · 2 → 30 VMs  AUTO-SCALE\n4 cœurs / 8 GB RAM"
                             fillcolor="#fde68a" color="#d97706" penwidth=2 style="filled,rounded"]
@@ -183,7 +183,7 @@ digraph UAE_Cloud {
                             fillcolor="#34d399" color="#059669" penwidth=2 style="filled,rounded"]
                 VM2_ELEARN [label="E-learning (VM 12-18)\nSaaS · Moodle — 7 VMs\n4 cœurs / 16 GB RAM"
                             fillcolor="#93c6f0" style="filled,rounded"]
-                VM2_ENT    [label="ENT / Inscriptions Apogée\nSaaS · 5 → 25 VMs  AUTO-SCALE\n4 cœurs / 8 GB RAM"
+                VM2_ENT    [label="ENT / Inscriptions Apogée\nSaaS · 5 → 53 VMs  AUTO-SCALE\n4 cœurs / 8 GB RAM"
                             fillcolor="#fde68a" color="#d97706" penwidth=2 style="filled,rounded"]
                 VM2_EXAMS  [label="Examens en ligne\nSaaS · 2 → 30 VMs  AUTO-SCALE\n4 cœurs / 8 GB RAM"
                             fillcolor="#fde68a" color="#d97706" penwidth=2 style="filled,rounded"]
@@ -215,7 +215,7 @@ digraph UAE_Cloud {
     // Local absorbe 22 VMs (88c), cloud public prend 26 VMs (104c)
     // ══════════════════════════════════════════════════════════════════════════
     subgraph cluster_public {
-        label      = "Cloud Public  —  Débordement (Cloud Bursting)\nPointe : 48 VMs · 192 cœurs  |  Local : 22 VMs (88c)  →  Public : 26 VMs (104c)"
+        label      = "Cloud Public  —  Débordement (Cloud Bursting)\nServices élastiques : ENT & Examens  |  Local : 22 VMs (88c)  →  Public : 26 VMs (104c)"
         fontsize   = 13
         fontname   = "Helvetica-Bold"
         fontcolor  = "#7d6608"
@@ -225,14 +225,14 @@ digraph UAE_Cloud {
         penwidth   = 3
 
         PUB_ENT [
-            label     = "VMs ENT / Inscriptions  overflow\nHorizontalVmScaling\n+20 VMs · 4c/8GB chacune"
+            label     = "VMs ENT / Inscriptions  overflow\nHorizontalVmScaling\n+26 VMs sur Cloud Public · 4c/8GB"
             fillcolor = "#fde68a"
             color     = "#d97706"
             penwidth  = 2
             style     = "filled,rounded"
         ]
         PUB_EXAMS [
-            label     = "VMs Examens en ligne  overflow\nHorizontalVmScaling\n+28 VMs · 4c/8GB chacune"
+            label     = "VMs Examens en ligne  overflow\nHorizontalVmScaling\nDébordement sessions examens · 4c/8GB"
             fillcolor = "#fde68a"
             color     = "#d97706"
             penwidth  = 2
@@ -264,10 +264,10 @@ digraph UAE_Cloud {
     H10 -> VM2_DSI    [style=dashed color="#2874a6" arrowhead=open]
 
     // VMs Auto-scale → Cloud Public (DB jamais sur cloud public)
-    VM1_ENT   -> PUB_ENT   [label="Cloud Bursting" color="#e67e22" fontcolor="#d35400" penwidth=2.5 style=bold]
+    VM1_ENT   -> PUB_ENT   [label="Cloud Bursting (+26 VMs)" color="#e67e22" fontcolor="#d35400" penwidth=2.5 style=bold]
     VM2_ENT   -> PUB_ENT   [color="#e67e22" penwidth=2 style=bold]
-    VM1_EXAMS -> PUB_EXAMS [label="Cloud Bursting" color="#e67e22" fontcolor="#d35400" penwidth=2.5 style=bold]
-    VM2_EXAMS -> PUB_EXAMS [color="#e67e22" penwidth=2 style=bold]
+    VM1_EXAMS -> PUB_EXAMS [label="Cloud Bursting (Examens)" color="#e67e22" fontcolor="#d35400" penwidth=2 style=dashed]
+    VM2_EXAMS -> PUB_EXAMS [color="#e67e22" penwidth=2 style=dashed]
 
     // ══════════════════════════════════════════════════════════════════════════
     // LÉGENDE
